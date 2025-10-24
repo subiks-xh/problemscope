@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="jumbotron bg-light p-5 rounded-3 mb-4">
+    <h1 class="display-4">🌍 Welcome to ProblemScope</h1>
+    <p class="lead">A platform where communities identify real problems and collaborate on solutions.</p>
+    <hr class="my-4">
+    <p>Report problems, propose solutions, and make a real impact!</p>
+    {% if not current_user.is_authenticated %}
+    <a class="btn btn-primary btn-lg" href="{{ url_for('register') }}" role="button">
+        <i class="fas fa-user-plus"></i> Get Started
+    </a>
+    {% else %}
+    <a class="btn btn-success btn-lg" href="{{ url_for('new_problem') }}" role="button">
+        <i class="fas fa-plus-circle"></i> Post a Problem
+    </a>
+    {% endif %}
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card text-white bg-info">
+            <div class="card-body text-center">
+                <h3><i class="fas fa-exclamation-circle"></i> {{ total_problems }}</h3>
+                <p>Total Problems</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-success">
+            <div class="card-body text-center">
+                <h3><i class="fas fa-check-circle"></i> {{ solved_problems }}</h3>
+                <p>Solved Problems</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-warning">
+            <div class="card-body text-center">
+                <h3><i class="fas fa-fire"></i> {{ verified_problems }}</h3>
+                <p>Verified Problems</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- SEARCH AND FILTER SECTION -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-dark text-white">
+        <h5 class="mb-0"><i class="fas fa-filter"></i> Search & Filter Problems</h5>
+    </div>
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('home') }}">
+            <div class="row g-3">
+                <!-- Search Box -->
+                <div class="col-md-12">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        <input type="text" class="form-control" name="search" 
+                               placeholder="Search problems by title, description, or location..." 
+                               value="{{ search_query }}">
+                    </div>
+                </div>
+                
+                <!-- Filters -->
+                <div class="col-md-3">
+                    <select name="category" class="form-select">
+                        <option value="">All Categories</option>
+                        <option value="Environment" {% if category_filter == 'Environment' %}selected{% endif %}>Environment</option>
+                        <option value="Education" {% if category_filter == 'Education' %}selected{% endif %}>Education</option>
+                        <option value="Health" {% if category_filter == 'Health' %}selected{% endif %}>Health</option>
+                        <option value="Infrastructure" {% if category_filter == 'Infrastructure' %}selected{% endif %}>Infrastructure</option>
+                        <option value="Technology" {% if category_filter == 'Technology' %}selected{% endif %}>Technology</option>
+                        <option value="Social" {% if category_filter == 'Social' %}selected{% endif %}>Social Issues</option>
+                        <option value="Other" {% if category_filter == 'Other' %}selected{% endif %}>Other</option>
+                    </select>
+                </div>
+                
+                <div class="col-md-3">
+                    <select name="severity" class="form-select">
+                        <option value="">All Severity Levels</option>
+                        <option value="Low" {% if severity_filter == 'Low' %}selected{% endif %}>Low</option>
+                        <option value="Medium" {% if severity_filter == 'Medium' %}selected{% endif %}>Medium</option>
+                        <option value="High" {% if severity_filter == 'High' %}selected{% endif %}>High</option>
+                        <option value="Critical" {% if severity_filter == 'Critical' %}selected{% endif %}>Critical</option>
+                    </select>
+                </div>
+                
+                <div class="col-md-3">
+                    <select name="status" class="form-select">
+                        <option value="">All Status</option>
+                        <option value="Pending Verification" {% if status_filter == 'Pending Verification' %}selected{% endif %}>Pending Verification</option>
+                        <option value="Verified" {% if status_filter == 'Verified' %}selected{% endif %}>Verified</option>
+                        <option value="Solution Proposed" {% if status_filter == 'Solution Proposed' %}selected{% endif %}>Solution Proposed</option>
+                        <option value="In Progress" {% if status_filter == 'In Progress' %}selected{% endif %}>In Progress</option>
+                        <option value="Solved" {% if status_filter == 'Solved' %}selected{% endif %}>Solved</option>
+                    </select>
+                </div>
+                
+                <div class="col-md-3">
+                    <select name="sort" class="form-select">
+                        <option value="impact" {% if sort_by == 'impact' %}selected{% endif %}>Sort by Impact Score</option>
+                        <option value="date" {% if sort_by == 'date' %}selected{% endif %}>Sort by Date (Newest)</option>
+                        <option value="affected" {% if sort_by == 'affected' %}selected{% endif %}>Sort by People Affected</option>
+                        <option value="verifications" {% if sort_by == 'verifications' %}selected{% endif %}>Sort by Verifications</option>
+                    </select>
+                </div>
+                
+                <!-- Buttons -->
+                <div class="col-md-12">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Apply Filters
+                    </button>
+                    <a href="{{ url_for('home') }}" class="btn btn-secondary">
+                        <i class="fas fa-redo"></i> Clear All
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Problems List -->
+<h2 class="mb-4">
+    <i class="fas fa-fire"></i> 
+    {% if search_query %}
+        Search Results for "{{ search_query }}"
+    {% else %}
+        Trending Problems
+    {% endif %}
+    <span class="badge bg-secondary">{{ problems.total }}</span>
+</h2>
+
+{% if problems.items %}
+    <div class="row">
+        {% for problem in problems.items %}
+        <div class="col-md-6 mb-4">
+            <div class="card h-100 shadow-sm problem-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span class="badge bg-{{ 'success' if problem.status == 'Solved' else 'warning' if problem.status == 'Verified' else 'secondary' }}">
+                        {{ problem.status }}
+                    </span>
+                    <span class="badge bg-danger">{{ problem.severity }}</span>
+                </div>
+                
+                <!-- Problem Image -->
+                {% if problem.image_url %}
+                <img src="{{ url_for('static', filename='images/problems/' + problem.image_url) }}" 
+                     class="card-img-top" alt="{{ problem.title }}" 
+                     style="height: 200px; object-fit: cover;">
+                {% endif %}
+                
+                <div class="card-body">
+                    <h5 class="card-title">{{ problem.title }}</h5>
+                    <p class="card-text text-muted">{{ problem.description[:150] }}...</p>
+                    
+                    <div class="mb-2">
+                        <span class="badge bg-primary">
+                            <i class="fas fa-tag"></i> {{ problem.category }}
+                        </span>
+                        <span class="badge bg-info">
+                            <i class="fas fa-map-marker-alt"></i> {{ problem.location }}
+                        </span>
+                    </div>
+                    
+                    <div class="problem-stats">
+                        <small class="text-muted">
+                            <i class="fas fa-users"></i> {{ problem.affected_count }} affected | 
+                            <i class="fas fa-chart-line"></i> Impact: {{ "%.1f"|format(problem.impact_score) }} |
+                            <i class="fas fa-check-double"></i> {{ problem.verification_count }} verifications
+                        </small>
+                    </div>
+                    
+                    <div class="mt-2">
+                        <small class="text-muted">
+                            Posted by <strong><a href="{{ url_for('user_profile', username=problem.author.username) }}">{{ problem.author.username }}</a></strong> on {{ problem.created_at.strftime('%Y-%m-%d') }}
+                        </small>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a href="{{ url_for('problem_detail', problem_id=problem.id) }}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-eye"></i> View Details
+                    </a>
+                    <span class="badge bg-secondary float-end">
+                        <i class="fas fa-comments"></i> {{ problem.comments|length }} comments
+                    </span>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Pagination -->
+    {% if problems.pages > 1 %}
+    <nav aria-label="Page navigation" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if problems.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('home', page=problems.prev_num, search=search_query, category=category_filter, severity=severity_filter, status=status_filter, sort=sort_by) }}">
+                        <i class="fas fa-arrow-left"></i> Previous
+                    </a>
+                </li>
+            {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link"><i class="fas fa-arrow-left"></i> Previous</span>
+                </li>
+            {% endif %}
+            
+            {% for page_num in problems.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                {% if page_num %}
+                    {% if page_num == problems.page %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ page_num }}</span>
+                        </li>
+                    {% else %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('home', page=page_num, search=search_query, category=category_filter, severity=severity_filter, status=status_filter, sort=sort_by) }}">
+                                {{ page_num }}
+                            </a>
+                        </li>
+                    {% endif %}
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                {% endif %}
+            {% endfor %}
+            
+            {% if problems.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('home', page=problems.next_num, search=search_query, category=category_filter, severity=severity_filter, status=status_filter, sort=sort_by) }}">
+                        Next <i class="fas fa-arrow-right"></i>
+                    </a>
+                </li>
+            {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">Next <i class="fas fa-arrow-right"></i></span>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+    
+{% else %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i> 
+        {% if search_query or category_filter or severity_filter or status_filter %}
+            No problems found matching your criteria. <a href="{{ url_for('home') }}">Clear filters</a>
+        {% else %}
+            No problems posted yet. Be the first to identify a problem!
+        {% endif %}
+    </div>
+{% endif %}
+
+{% endblock %}

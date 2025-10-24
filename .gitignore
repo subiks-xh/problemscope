@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env_site/
+
+# Flask
+instance/
+.webassets-cache
+*.db
+
+# Environment variables
+.env
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Uploads (optional - comment out if you want to track uploads)
+# app/static/images/problems/*
+# app/static/images/profiles/*
+
+# Logs
+*.log

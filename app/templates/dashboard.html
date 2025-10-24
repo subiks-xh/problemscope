@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2><i class="fas fa-tachometer-alt"></i> My Dashboard</h2>
+<p class="lead">Welcome back, <strong>{{ current_user.username }}</strong>! Here's your activity.</p>
+
+<hr>
+
+<!-- User Stats -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card text-white bg-primary">
+            <div class="card-body text-center">
+                <h3>{{ problems|length }}</h3>
+                <p>Problems Posted</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-success">
+            <div class="card-body text-center">
+                <h3>{{ solutions|length }}</h3>
+                <p>Solutions Proposed</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-warning">
+            <div class="card-body text-center">
+                <h3>{{ current_user.reputation_points }}</h3>
+                <p>Reputation Points</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- My Problems -->
+<h3><i class="fas fa-exclamation-circle"></i> My Problems</h3>
+{% if problems %}
+<div class="table-responsive">
+    <table class="table table-striped table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>Title</th>
+                <th>Category</th>
+                <th>Status</th>
+                <th>Impact Score</th>
+                <th>Date</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for problem in problems %}
+            <tr>
+                <td>{{ problem.title }}</td>
+                <td><span class="badge bg-primary">{{ problem.category }}</span></td>
+                <td><span class="badge bg-{{ 'success' if problem.status == 'Solved' else 'warning' }}">{{ problem.status }}</span></td>
+                <td>{{ "%.1f"|format(problem.impact_score) }}</td>
+                <td>{{ problem.created_at.strftime('%Y-%m-%d') }}</td>
+                <td>
+                    <a href="{{ url_for('problem_detail', problem_id=problem.id) }}" class="btn btn-sm btn-outline-primary">
+                        View
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info">
+    You haven't posted any problems yet. <a href="{{ url_for('new_problem') }}">Post one now!</a>
+</div>
+{% endif %}
+
+<hr>
+
+<!-- My Solutions -->
+<h3><i class="fas fa-lightbulb"></i> My Solutions</h3>
+{% if solutions %}
+<div class="table-responsive">
+    <table class="table table-striped table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>Problem</th>
+                <th>Solution</th>
+                <th>Votes</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for solution in solutions %}
+            <tr>
+                <td>
+                    <a href="{{ url_for('problem_detail', problem_id=solution.problem_id) }}">
+                        {{ solution.problem.title }}
+                    </a>
+                </td>
+                <td>{{ solution.description[:50] }}...</td>
+                <td><span class="badge bg-info">{{ solution.votes }}</span></td>
+                <td>{{ solution.created_at.strftime('%Y-%m-%d') }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info">
+    You haven't proposed any solutions yet. Visit problems and share your ideas!
+</div>
+{% endif %}
+
+{% endblock %}

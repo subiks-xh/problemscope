@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1 class="mb-4"><i class="fas fa-chart-line"></i> Platform Analytics</h1>
+
+<!-- Overall Statistics -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary shadow">
+            <div class="card-body text-center">
+                <h2>{{ total_problems }}</h2>
+                <p class="mb-0">Total Problems</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-success shadow">
+            <div class="card-body text-center">
+                <h2>{{ solved_problems }}</h2>
+                <p class="mb-0">Solved Problems</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-info shadow">
+            <div class="card-body text-center">
+                <h2>{{ total_solutions }}</h2>
+                <p class="mb-0">Total Solutions</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-warning shadow">
+            <div class="card-body text-center">
+                <h2>{{ total_users }}</h2>
+                <p class="mb-0">Active Users</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Category Breakdown -->
+    <div class="col-md-6 mb-4">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-tags"></i> Problems by Category</h5>
+            </div>
+            <div class="card-body">
+                {% for category, count in categories %}
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>{{ category }}</span>
+                        <strong>{{ count }}</strong>
+                    </div>
+                    <div class="progress" style="height: 25px;">
+                        <div class="progress-bar bg-primary" 
+                             style="width: {{ (count / total_problems * 100)|int }}%">
+                            {{ (count / total_problems * 100)|int }}%
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Severity Breakdown -->
+    <div class="col-md-6 mb-4">
+        <div class="card shadow">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="fas fa-exclamation-triangle"></i> Problems by Severity</h5>
+            </div>
+            <div class="card-body">
+                {% for severity, count in severities %}
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>{{ severity }}</span>
+                        <strong>{{ count }}</strong>
+                    </div>
+                    <div class="progress" style="height: 25px;">
+                        <div class="progress-bar bg-{{ 'danger' if severity == 'Critical' else 'warning' if severity == 'High' else 'info' }}" 
+                             style="width: {{ (count / total_problems * 100)|int }}%">
+                            {{ (count / total_problems * 100)|int }}%
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Status Breakdown -->
+    <div class="col-md-6 mb-4">
+        <div class="card shadow">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-tasks"></i> Problems by Status</h5>
+            </div>
+            <div class="card-body">
+                {% for status, count in statuses %}
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>{{ status }}</span>
+                        <strong>{{ count }}</strong>
+                    </div>
+                    <div class="progress" style="height: 25px;">
+                        <div class="progress-bar bg-{{ 'success' if status == 'Solved' else 'warning' if status == 'Verified' else 'secondary' }}" 
+                             style="width: {{ (count / total_problems * 100)|int }}%">
+                            {{ (count / total_problems * 100)|int }}%
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Top Contributors -->
+    <div class="col-md-6 mb-4">
+        <div class="card shadow">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="fas fa-trophy"></i> Top Contributors</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    {% for username, reputation, problem_count in top_contributors %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fas fa-medal text-warning"></i>
+                            <a href="{{ url_for('user_profile', username=username) }}">
+                                <strong>{{ username }}</strong>
+                            </a>
+                            <br>
+                            <small class="text-muted">{{ problem_count }} problems posted</small>
+                        </div>
+                        <span class="badge bg-warning text-dark fs-6">
+                            {{ reputation }} points
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="card shadow">
+    <div class="card-header bg-info text-white">
+        <h5 class="mb-0"><i class="fas fa-clock"></i> Recent Problems</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Problem</th>
+                        <th>Author</th>
+                        <th>Category</th>
+                        <th>Status</th>
+                        <th>Impact</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for problem in recent_problems %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('problem_detail', problem_id=problem.id) }}">
+                                {{ problem.title[:50] }}...
+                            </a>
+                        </td>
+                        <td>
+                            <a href="{{ url_for('user_profile', username=problem.author.username) }}">
+                                {{ problem.author.username }}
+                            </a>
+                        </td>
+                        <td><span class="badge bg-primary">{{ problem.category }}</span></td>
+                        <td><span class="badge bg-{{ 'success' if problem.status == 'Solved' else 'warning' }}">{{ problem.status }}</span></td>
+                        <td>{{ "%.1f"|format(problem.impact_score) }}</td>
+                        <td>{{ problem.created_at.strftime('%Y-%m-%d') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

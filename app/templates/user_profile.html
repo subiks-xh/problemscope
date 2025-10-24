@@ -1,0 +1,166 @@
+{% extends "base.html" %} {% block content %}
+
+<div class="row">
+  <!-- User Info Card -->
+  <div class="col-md-4">
+    <div class="card shadow">
+      <div class="card-body text-center">
+        <div class="mb-3">
+          <img
+            src="{{ url_for('static', filename='images/profiles/' + user.profile_picture) }}"
+            class="rounded-circle shadow"
+            alt="{{ user.username }}"
+            style="
+              width: 150px;
+              height: 150px;
+              object-fit: cover;
+              border: 5px solid #667eea;
+            "
+          />
+        </div>
+        <h3>{{ user.username }}</h3>
+        {% if user.is_verified %}
+        <span class="badge bg-success mb-2">
+          <i class="fas fa-check-circle"></i> Verified
+        </span>
+        {% endif %} {% if user.is_admin %}
+        <span class="badge bg-danger mb-2">
+          <i class="fas fa-shield-alt"></i> Admin
+        </span>
+        {% endif %}
+        <p class="text-muted">
+          <i class="fas fa-envelope"></i> {{ user.email }}
+        </p>
+        <p class="text-muted">
+          <i class="fas fa-map-marker-alt"></i> {{ user.location }}
+        </p>
+
+        {% if user.skills %}
+        <div class="mb-3">
+          <h6>Skills:</h6>
+          {% for skill in user.skills.split(',') %}
+          <span class="badge bg-info">{{ skill.strip() }}</span>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="mb-2">
+          <span class="badge bg-warning text-dark fs-5">
+            <i class="fas fa-star"></i> {{ user.reputation_points }} Reputation
+          </span>
+        </div>
+
+        <small class="text-muted"
+          >Member since {{ user.created_at.strftime('%B %Y') }}</small
+        >
+      </div>
+    </div>
+
+    <!-- Statistics Card -->
+    <div class="card shadow mt-3">
+      <div class="card-header bg-primary text-white">
+        <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Statistics</h5>
+      </div>
+      <div class="card-body">
+        <div class="d-flex justify-content-between mb-2">
+          <span>Problems Posted:</span>
+          <strong>{{ problems|length }}</strong>
+        </div>
+        <div class="d-flex justify-content-between mb-2">
+          <span>Solutions Proposed:</span>
+          <strong>{{ solutions|length }}</strong>
+        </div>
+        <div class="d-flex justify-content-between mb-2">
+          <span>Problems Solved:</span>
+          <strong>{{ solved_problems }}</strong>
+        </div>
+        <div class="d-flex justify-content-between mb-2">
+          <span>Total Impact:</span>
+          <strong>{{ "%.1f"|format(total_impact) }}</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Problems & Solutions -->
+  <div class="col-md-8">
+    <!-- Problems Posted -->
+    <div class="card shadow mb-4">
+      <div class="card-header bg-success text-white">
+        <h5 class="mb-0">
+          <i class="fas fa-exclamation-circle"></i> Problems Posted ({{
+          problems|length }})
+        </h5>
+      </div>
+      <div class="card-body">
+        {% if problems %} {% for problem in problems %}
+        <div class="card mb-3">
+          <div class="card-body">
+            <div class="d-flex justify-content-between">
+              <div>
+                <h6>
+                  <a
+                    href="{{ url_for('problem_detail', problem_id=problem.id) }}"
+                  >
+                    {{ problem.title }}
+                  </a>
+                </h6>
+                <div>
+                  <span
+                    class="badge bg-{{ 'success' if problem.status == 'Solved' else 'warning' }}"
+                  >
+                    {{ problem.status }}
+                  </span>
+                  <span class="badge bg-primary">{{ problem.category }}</span>
+                  <span class="badge bg-danger">{{ problem.severity }}</span>
+                </div>
+                <small class="text-muted">
+                  Impact: {{ "%.1f"|format(problem.impact_score) }} | {{
+                  problem.created_at.strftime('%Y-%m-%d') }}
+                </small>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %} {% else %}
+        <p class="text-muted">No problems posted yet.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Solutions Proposed -->
+    <div class="card shadow">
+      <div class="card-header bg-info text-white">
+        <h5 class="mb-0">
+          <i class="fas fa-lightbulb"></i> Solutions Proposed ({{
+          solutions|length }})
+        </h5>
+      </div>
+      <div class="card-body">
+        {% if solutions %} {% for solution in solutions %}
+        <div class="card mb-3">
+          <div class="card-body">
+            <h6>
+              For:
+              <a
+                href="{{ url_for('problem_detail', problem_id=solution.problem_id) }}"
+              >
+                {{ solution.problem.title }}
+              </a>
+            </h6>
+            <p class="mb-1">{{ solution.description[:100] }}...</p>
+            <small class="text-muted">
+              <span class="badge bg-success">{{ solution.votes }} votes</span> |
+              {{ solution.created_at.strftime('%Y-%m-%d') }}
+            </small>
+          </div>
+        </div>
+        {% endfor %} {% else %}
+        <p class="text-muted">No solutions proposed yet.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

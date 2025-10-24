@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background: #f4f4f4;
+        padding: 20px;
+      }
+      .container {
+        background: white;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 30px;
+        border-radius: 10px;
+      }
+      .btn {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        color: white;
+        padding: 12px 30px;
+        text-decoration: none;
+        border-radius: 5px;
+        display: inline-block;
+        margin-top: 20px;
+      }
+      h1 {
+        color: #11998e;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>💡 New Solution Proposed!</h1>
+      <p>Hi {{ problem.author.username }},</p>
+      <p>
+        <strong>{{ solution.proposer.username }}</strong> proposed a solution to
+        your problem:
+      </p>
+      <h3>{{ problem.title }}</h3>
+      <div
+        style="
+          background: #d4edda;
+          padding: 15px;
+          border-left: 4px solid #11998e;
+          margin: 20px 0;
+        "
+      >
+        <p>{{ solution.description }}</p>
+      </div>
+      <a href="http://127.0.0.1:5000/problem/{{ problem.id }}" class="btn"
+        >View Solution</a
+      >
+    </div>
+  </body>
+</html>

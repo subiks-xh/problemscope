@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background: #f4f4f4;
+        padding: 20px;
+      }
+      .container {
+        background: white;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 30px;
+        border-radius: 10px;
+      }
+      .btn {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        color: white;
+        padding: 12px 30px;
+        text-decoration: none;
+        border-radius: 5px;
+        display: inline-block;
+        margin-top: 20px;
+      }
+      h1 {
+        color: #4facfe;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>💬 New Comment on Your Problem</h1>
+      <p>Hi {{ problem.author.username }},</p>
+      <p>
+        <strong>{{ comment.author.username }}</strong> commented on your
+        problem:
+      </p>
+      <h3>{{ problem.title }}</h3>
+      <div
+        style="
+          background: #f8f9fa;
+          padding: 15px;
+          border-left: 4px solid #4facfe;
+          margin: 20px 0;
+        "
+      >
+        <p>{{ comment.content }}</p>
+      </div>
+      <a href="http://127.0.0.1:5000/problem/{{ problem.id }}" class="btn"
+        >View Problem</a
+      >
+    </div>
+  </body>
+</html>

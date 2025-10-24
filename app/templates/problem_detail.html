@@ -1,0 +1,273 @@
+{% extends "base.html" %} {% block content %}
+
+<!-- Problem Details -->
+<div class="card shadow-lg mb-4">
+  <div class="card shadow-lg mb-4">
+    <div class="card-header bg-primary text-white">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2 class="mb-0">{{ problem.title }}</h2>
+            <div>
+                <span class="badge bg-{{ 'success' if problem.status == 'Solved' else 'warning' if problem.status == 'Verified' else 'secondary' }} fs-6 me-2">
+                    {{ problem.status }}
+                </span>
+                
+                <!-- Bookmark Button -->
+                {% if current_user.is_authenticated %}
+                    <form method="POST" action="{{ url_for('bookmark_problem', problem_id=problem.id) }}" class="d-inline">
+                        <button type="submit" class="btn btn-sm btn-{{ 'warning' if is_bookmarked else 'outline-light' }}">
+                            <i class="fas fa-bookmark"></i>
+                            {{ 'Bookmarked' if is_bookmarked else 'Bookmark' }}
+                        </button>
+                    </form>
+                {% endif %}
+                
+                <!-- Export PDF Button -->
+                {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('export_problem_pdf', problem_id=problem.id) }}" class="btn btn-sm btn-outline-light">
+                        <i class="fas fa-file-pdf"></i> Export PDF
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+  <div class="card-body">
+    <!-- Problem Image -->
+    {% if problem.image_url %}
+    <div class="text-center mb-4">
+      <img
+        src="{{ url_for('static', filename='images/problems/' + problem.image_url) }}"
+        class="img-fluid rounded shadow"
+        alt="{{ problem.title }}"
+        style="max-height: 400px; width: auto"
+      />
+    </div>
+    {% endif %}
+    <div class="row mb-3">
+      <div class="col-md-8">
+        <h5><i class="fas fa-align-left"></i> Description</h5>
+        <p class="lead">{{ problem.description }}</p>
+      </div>
+      <div class="col-md-4">
+        <div class="card bg-light">
+          <div class="card-body">
+            <h6><i class="fas fa-info-circle"></i> Problem Info</h6>
+            <hr />
+            <p>
+              <strong>Category:</strong>
+              <span class="badge bg-primary">{{ problem.category }}</span>
+            </p>
+            <p>
+              <strong>Location:</strong>
+              <i class="fas fa-map-marker-alt"></i> {{ problem.location }}
+            </p>
+            <p>
+              <strong>Severity:</strong>
+              <span class="badge bg-danger">{{ problem.severity }}</span>
+            </p>
+            <p>
+              <strong>People Affected:</strong> {{ problem.affected_count }}
+            </p>
+            <p>
+              <strong>Impact Score:</strong>
+              <span class="badge bg-warning text-dark"
+                >{{ "%.1f"|format(problem.impact_score) }}</span
+              >
+            </p>
+            <p>
+              <strong>Verifications:</strong> {{ problem.verification_count }}
+            </p>
+            <p><strong>Posted by:</strong> {{ problem.author.username }}</p>
+            <p>
+              <strong>Date:</strong> {{ problem.created_at.strftime('%Y-%m-%d')
+              }}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Verify Button -->
+    {% if current_user.is_authenticated and current_user.id != problem.user_id
+    %}
+    <div class="mb-3">
+      <form
+        method="POST"
+        action="{{ url_for('verify_problem', problem_id=problem.id) }}"
+        class="d-inline"
+      >
+        {{ verification_form.hidden_tag() }}
+        <button type="submit" class="btn btn-outline-success">
+          <i class="fas fa-check-circle"></i> Verify This Problem
+        </button>
+      </form>
+      <small class="text-muted ms-2"
+        >Help validate this problem if you can confirm it exists</small
+      >
+    </div>
+    {% endif %}
+  </div>
+</div>
+<!-- Status Update Section (Only for Problem Author) -->
+{% if current_user.is_authenticated and current_user.id == problem.user_id %}
+<div class="card shadow mb-4 border-warning">
+    <div class="card-header bg-warning">
+        <h5 class="mb-0"><i class="fas fa-tasks"></i> Update Problem Status</h5>
+    </div>
+    <div class="card-body">
+        <p class="mb-3">Current Status: <span class="badge bg-primary fs-6">{{ problem.status }}</span></p>
+        <div class="btn-group" role="group">
+            <form method="POST" action="{{ url_for('update_problem_status', problem_id=problem.id, new_status='Pending Verification') }}" class="d-inline">
+                <button type="submit" class="btn btn-sm btn-outline-secondary">Pending Verification</button>
+            </form>
+            <form method="POST" action="{{ url_for('update_problem_status', problem_id=problem.id, new_status='Verified') }}" class="d-inline">
+                <button type="submit" class="btn btn-sm btn-outline-info">Verified</button>
+            </form>
+            <form method="POST" action="{{ url_for('update_problem_status', problem_id=problem.id, new_status='Solution Proposed') }}" class="d-inline">
+                <button type="submit" class="btn btn-sm btn-outline-primary">Solution Proposed</button>
+            </form>
+            <form method="POST" action="{{ url_for('update_problem_status', problem_id=problem.id, new_status='In Progress') }}" class="d-inline">
+                <button type="submit" class="btn btn-sm btn-outline-warning">In Progress</button>
+            </form>
+            <form method="POST" action="{{ url_for('update_problem_status', problem_id=problem.id, new_status='Solved') }}" class="d-inline">
+                <button type="submit" class="btn btn-sm btn-outline-success">Mark as Solved ✓</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+<!-- Solutions Section -->
+<div class="card shadow mb-4">
+    <div class="card-header bg-success text-white">
+        <h4><i class="fas fa-lightbulb"></i> Proposed Solutions ({{ solutions|length }})</h4>
+    </div>
+    <div class="card-body">
+        {% if solutions %}
+            {% for solution in solutions %}
+            <div class="card mb-3 {% if solution.votes > 5 %}border-success{% endif %}">
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Voting Section -->
+                        <div class="col-md-1 text-center">
+                            {% if current_user.is_authenticated %}
+                            <form method="POST" action="{{ url_for('vote_solution', solution_id=solution.id, vote_type=1) }}" style="display: inline;">
+                                <button type="submit" class="btn btn-sm btn-outline-success mb-1">
+                                    <i class="fas fa-arrow-up"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                            
+                            <div class="fs-5 fw-bold {% if solution.votes > 0 %}text-success{% elif solution.votes < 0 %}text-danger{% endif %}">
+                                {{ solution.votes }}
+                            </div>
+                            
+                            {% if current_user.is_authenticated %}
+                            <form method="POST" action="{{ url_for('vote_solution', solution_id=solution.id, vote_type=-1) }}" style="display: inline;">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    <i class="fas fa-arrow-down"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Solution Content -->
+                        <div class="col-md-11">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6>
+                                        <i class="fas fa-user"></i> 
+                                        <a href="{{ url_for('user_profile', username=solution.proposer.username) }}">
+                                            {{ solution.proposer.username }}
+                                        </a>
+                                        {% if solution.votes > 5 %}
+                                        <span class="badge bg-success ms-2">
+                                            <i class="fas fa-star"></i> Top Solution
+                                        </span>
+                                        {% endif %}
+                                    </h6>
+                                    <p class="mb-2">{{ solution.description }}</p>
+                                    <small class="text-muted">
+                                        <i class="fas fa-clock"></i> {{ solution.created_at.strftime('%Y-%m-%d %H:%M') }}
+                                    </small>
+                                </div>
+                                <div>
+                                    <span class="badge bg-info">Feasibility: {{ solution.feasibility_score }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p class="text-muted">No solutions proposed yet. Be the first to suggest a solution!</p>
+        {% endif %}
+
+        <!-- Propose Solution Form -->
+        {% if current_user.is_authenticated %}
+        <div class="card bg-light mt-3">
+            <div class="card-body">
+                <h5><i class="fas fa-plus"></i> Propose a Solution</h5>
+                <form method="POST" action="">
+                    {{ solution_form.hidden_tag() }}
+                    <div class="mb-3">
+                        {{ solution_form.description(class="form-control", rows="3", placeholder="Describe your solution...") }}
+                    </div>
+                    {{ solution_form.submit(class="btn btn-success") }}
+                </form>
+            </div>
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+            <a href="{{ url_for('login') }}">Login</a> to propose a solution
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Comments Section -->
+<div class="card shadow">
+  <div class="card-header bg-info text-white">
+    <h4><i class="fas fa-comments"></i> Discussion ({{ comments|length }})</h4>
+  </div>
+  <div class="card-body">
+    {% if comments %} {% for comment in comments %}
+    <div class="card mb-2">
+      <div class="card-body">
+        <h6>
+          <i class="fas fa-user-circle"></i> {{ comment.author.username }}
+        </h6>
+        <p class="mb-1">{{ comment.content }}</p>
+        <small class="text-muted">
+          <i class="fas fa-clock"></i> {{ comment.created_at.strftime('%Y-%m-%d
+          %H:%M') }}
+        </small>
+      </div>
+    </div>
+    {% endfor %} {% else %}
+    <p class="text-muted">No comments yet. Start the discussion!</p>
+    {% endif %}
+
+    <!-- Add Comment Form -->
+    {% if current_user.is_authenticated %}
+    <div class="card bg-light mt-3">
+      <div class="card-body">
+        <h5><i class="fas fa-comment"></i> Add a Comment</h5>
+        <form method="POST" action="">
+          {{ comment_form.hidden_tag() }}
+          <div class="mb-3">
+            {{ comment_form.content(class="form-control", rows="2",
+            placeholder="Share your thoughts...") }}
+          </div>
+          {{ comment_form.submit(class="btn btn-info") }}
+        </form>
+      </div>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+      <a href="{{ url_for('login') }}">Login</a> to join the discussion
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}
