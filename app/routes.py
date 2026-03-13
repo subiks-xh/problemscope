@@ -1,4 +1,5 @@
 from flask import render_template, url_for, flash, redirect, request, current_app as app, abort, send_file
+from urllib.parse import urlparse
 from app import db, bcrypt, limiter
 from app.models import User, Problem, Solution, Comment, Verification, SolutionVote, Bookmark, Tag, ProblemTag, Activity
 from app.forms import (RegistrationForm, LoginForm, ProblemForm, SolutionForm, CommentForm, 
@@ -136,12 +137,18 @@ def login():
         user = User.query.filter_by(email=form.email.data).first()
         
         if user and bcrypt.check_password_hash(user.password, form.password.data):
+            if not user.is_verified:
+                flash('Please verify your email address before logging in. Check your inbox for the verification link.', 'warning')
+                return render_template('login.html', title='Login', form=form)
             login_user(user)
             user.last_seen = datetime.utcnow()
             db.session.commit()
             
             flash('Login successful!', 'success')
             next_page = request.args.get('next')
+            # Prevent open redirect: only allow local paths
+            if next_page and urlparse(next_page).netloc:
+                next_page = None
             return redirect(next_page) if next_page else redirect(url_for('home'))
         else:
             flash('Login failed. Please check email and password.', 'danger')
@@ -157,91 +164,36 @@ def logout():
 
 
 # ==========================================
-# PASSWORD RESET - WITH DEBUG LOGGING
+# PASSWORD RESET
 # ==========================================
 
 @app.route('/reset_request', methods=['GET', 'POST'])
 def reset_request():
-    print("\n" + "="*80)
-    print("🔥 RESET REQUEST ROUTE ACCESSED 🔥")
-    print("="*80)
-    
     if current_user.is_authenticated:
-        print("User already authenticated, redirecting to home")
         return redirect(url_for('home'))
     
     form = RequestResetForm()
-    print(f"Form created. Is valid on submit: {form.validate_on_submit()}")
-    
     if form.validate_on_submit():
-        print("\n" + "🎯"*40)
-        print("PASSWORD RESET FORM SUBMITTED")
-        print("🎯"*40)
-        
-        email = form.email.data
-        print(f"📧 Email entered: {email}")
-        
-        user = User.query.filter_by(email=email).first()
+        user = User.query.filter_by(email=form.email.data).first()
         
         if user:
-            print(f"\n✅ USER FOUND!")
-            print(f"   Username: {user.username}")
-            print(f"   Email: {user.email}")
-            print(f"   ID: {user.id}")
-            
             try:
-                print("\n📝 Step 1: Generating reset token...")
                 token = user.get_reset_token()
-                print(f"✅ Token generated successfully!")
-                print(f"   Token (first 40 chars): {token[:40]}...")
-                
-                print("\n📧 Step 2: Importing email function...")
-                from app.email import send_password_reset_email
-                print("✅ Email function imported")
-                
-                print("\n📤 Step 3: Sending password reset email...")
-                print(f"   Recipient: {user.email}")
-                print(f"   Token length: {len(token)} characters")
-                
                 result = send_password_reset_email(user, token)
-                
-                print(f"\n📬 Email send function returned: {result}")
-                
                 if result:
-                    print("\n" + "✅"*40)
-                    print("SUCCESS! PASSWORD RESET EMAIL SENT!")
-                    print("✅"*40 + "\n")
                     flash('Password reset instructions have been sent to your email. Check spam folder too!', 'success')
                 else:
-                    print("\n" + "❌"*40)
-                    print("FAILED! EMAIL NOT SENT!")
-                    print("❌"*40 + "\n")
                     flash('Failed to send reset email. Please try again later.', 'danger')
-                
             except Exception as e:
-                print("\n" + "🚨"*40)
-                print("EXCEPTION CAUGHT IN RESET REQUEST!")
-                print("🚨"*40)
-                print(f"Exception Type: {type(e).__name__}")
-                print(f"Exception Message: {str(e)}")
-                print("\nFull Traceback:")
                 import traceback
                 traceback.print_exc()
-                print("🚨"*40 + "\n")
-                flash(f'An error occurred: {str(e)}', 'danger')
+                flash('An error occurred while sending the reset email. Please try again.', 'danger')
         else:
-            print(f"\n❌ NO USER FOUND with email: {email}")
-            print("\n📋 Registered users in database:")
-            all_users = User.query.all()
-            for u in all_users:
-                print(f"   - {u.username}: {u.email}")
-            print()
-            flash('If that email exists, password reset instructions have been sent.', 'info')
+            # Vague message to prevent user enumeration
+            flash('If that email is registered, password reset instructions have been sent.', 'info')
         
-        print("🔄 Redirecting to login page...\n")
         return redirect(url_for('login'))
     
-    print("📄 Rendering password reset request template\n")
     return render_template('reset_request.html', title='Reset Password', form=form)
 
 
@@ -503,7 +455,8 @@ def bookmark_problem(problem_id):
 @login_required
 def bookmarks():
     user_bookmarks = Bookmark.query.filter_by(user_id=current_user.id).all()
-    bookmarked_problems = [b.problem for b in user_bookmarks]
+    # Filter out any bookmarks whose problem was deleted
+    bookmarked_problems = [b.problem for b in user_bookmarks if b.problem is not None]
     
     return render_template('bookmarks.html', problems=bookmarked_problems, title='My Bookmarks')
 
@@ -535,6 +488,18 @@ def edit_profile():
     form = UpdateProfileForm()
     
     if form.validate_on_submit():
+        # Check username uniqueness if it changed
+        if form.username.data != current_user.username:
+            if User.query.filter_by(username=form.username.data).first():
+                flash('That username is already taken. Please choose another.', 'danger')
+                return render_template('edit_profile.html', title='Edit Profile', form=form)
+        
+        # Check email uniqueness if it changed
+        if form.email.data != current_user.email:
+            if User.query.filter_by(email=form.email.data).first():
+                flash('That email address is already registered.', 'danger')
+                return render_template('edit_profile.html', title='Edit Profile', form=form)
+        
         if form.profile_picture.data:
             picture_file = save_picture(form.profile_picture.data, 'profiles')
             current_user.profile_picture = picture_file
@@ -669,6 +634,10 @@ def admin_delete_problem(problem_id):
         abort(403)
     
     problem = Problem.query.get_or_404(problem_id)
+    # Delete records not covered by the cascade (Bookmarks, ProblemTags, Activities)
+    Bookmark.query.filter_by(problem_id=problem_id).delete()
+    ProblemTag.query.filter_by(problem_id=problem_id).delete()
+    Activity.query.filter_by(problem_id=problem_id).delete()
     db.session.delete(problem)
     db.session.commit()
     

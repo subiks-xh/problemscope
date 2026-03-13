@@ -14,6 +14,7 @@
                 <!-- Bookmark Button -->
                 {% if current_user.is_authenticated %}
                     <form method="POST" action="{{ url_for('bookmark_problem', problem_id=problem.id) }}" class="d-inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn btn-sm btn-{{ 'warning' if is_bookmarked else 'outline-light' }}">
                             <i class="fas fa-bookmark"></i>
                             {{ 'Bookmarked' if is_bookmarked else 'Bookmark' }}
@@ -117,18 +118,23 @@
         <p class="mb-3">Current Status: <span class="badge bg-primary fs-6">{{ problem.status }}</span></p>
         <div class="btn-group" role="group">
             <form method="POST" action="{{ url_for('update_problem_status', problem_id=problem.id, new_status='Pending Verification') }}" class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="btn btn-sm btn-outline-secondary">Pending Verification</button>
             </form>
             <form method="POST" action="{{ url_for('update_problem_status', problem_id=problem.id, new_status='Verified') }}" class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="btn btn-sm btn-outline-info">Verified</button>
             </form>
             <form method="POST" action="{{ url_for('update_problem_status', problem_id=problem.id, new_status='Solution Proposed') }}" class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="btn btn-sm btn-outline-primary">Solution Proposed</button>
             </form>
             <form method="POST" action="{{ url_for('update_problem_status', problem_id=problem.id, new_status='In Progress') }}" class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="btn btn-sm btn-outline-warning">In Progress</button>
             </form>
             <form method="POST" action="{{ url_for('update_problem_status', problem_id=problem.id, new_status='Solved') }}" class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="btn btn-sm btn-outline-success">Mark as Solved ✓</button>
             </form>
         </div>
@@ -150,6 +156,7 @@
                         <div class="col-md-1 text-center">
                             {% if current_user.is_authenticated %}
                             <form method="POST" action="{{ url_for('vote_solution', solution_id=solution.id, vote_type=1) }}" style="display: inline;">
+                              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <button type="submit" class="btn btn-sm btn-outline-success mb-1">
                                     <i class="fas fa-arrow-up"></i>
                                 </button>
@@ -162,6 +169,7 @@
                             
                             {% if current_user.is_authenticated %}
                             <form method="POST" action="{{ url_for('vote_solution', solution_id=solution.id, vote_type=-1) }}" style="display: inline;">
+                              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <button type="submit" class="btn btn-sm btn-outline-danger">
                                     <i class="fas fa-arrow-down"></i>
                                 </button>
